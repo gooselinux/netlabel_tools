@@ -1,0 +1,59 @@
+# This file contains the rules for the Netlabel subsystem, for more information
+# please see the netlabelctl(1) man page.
+#
+# Each line contains just the arguments to the netlabel command
+
+####
+# NOTE: By default the kernel sends unlabeled traffic and allows unlabled
+#       traffic into the system, to disable that add the following two lines to
+#       the beginning of your configuration.  However, be warned that you
+#       should only change these settings if you know what you are doing as you
+#       could accidently disable networking with a bad configuration.
+#
+
+# Remove the default domain mapping
+#map del default
+
+# Do not accept incoming unlabeled packets
+#unlbl accept off
+
+####
+# Unlabeled examples:
+#
+
+# Enable unlabeled packets
+#unlbl accept on
+
+# Disable unlabeled packets
+#unlbl accept off
+
+
+####
+# CIPSOv4 examples:
+#
+
+# Create a CIPSOv4 DOI definition using a pass-through mapping with a DOI
+# value of 6 and the restricted bitmap tag (CIPSOv4 tag type #1)
+#cipsov4 add pass doi:6 tags:1
+
+# Create a CIPSOv4 DOI definition using a standard mapping with a DOI value
+# of 8 and the restricted bitmap tag (CIPSOv4 tag type #1).  The example
+# below maps MLS sensitivity levels and categories 0 through 2 to the same
+# values for both CIPSO and the Linux LSM
+#cipsov4 add std doi:8 tags:1 levels:0=0,1=1,2=2 categories:0=0,1=1,2=2
+
+
+####
+# LSM mapping examples:
+#
+
+# Create a default mapping for all LSM domains using the unlabeled protocol
+#map add default protocol:unlbl
+
+# Create a default mapping for all LSM domains using the CIPSOv4 protocol
+# with DOI number 6
+#map add default protocol:cipsov4,6
+
+# Create a mapping for the "secret_t" LSM domain and the CIPSOv4 protocol
+# with DOI number 8
+#map add domain:secret_t protocol:cipsov4,8

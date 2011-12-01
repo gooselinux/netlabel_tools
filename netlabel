@@ -1,0 +1,119 @@
+#!/bin/sh
+#
+# netlabel	Start CIPSO labeled networking
+#
+# chkconfig: - 09 91
+# description:	Starts and stops CIPSO labeled networking
+#
+# config: /etc/netlabel.rules
+#
+# Return values according to LSB for all commands but status:
+# 0 - success
+# 1 - generic or unspecified error
+# 2 - invalid or excess argument(s)
+# 3 - unimplemented feature (e.g. "reload")
+# 4 - insufficient privilege
+# 5 - program is not installed
+# 6 - program is not configured
+# 7 - program is not running
+
+PATH=/sbin:/bin:/usr/bin:/usr/sbin
+VAR_SUBSYS_NETLABEL=/var/lock/subsys/netlabel
+RULES=/etc/netlabel.rules
+
+# Source function library.
+. /etc/init.d/functions
+
+# Check that we are root ... so non-root users stop here
+test `id -u` = 0  || exit 4
+test -x /sbin/netlabelctl || exit 5
+test -f $RULES || exit 6
+
+start() {
+    ret_val="0"
+
+    # Loop through rules
+    while read LINE
+    do
+	# Skip comments and blank lines
+	if echo $LINE | egrep '^#|^$' >/dev/null ; then
+		continue
+	fi
+	/sbin/netlabelctl $LINE >/dev/null 2>&1
+	ret="$?"
+	if [ "$ret" != "0" ] ; then
+		ret_val="$ret"
+	fi
+    done < $RULES
+    touch $VAR_SUBSYS_NETLABEL
+    return $ret_val
+}
+
+stop() {
+    rm -f $VAR_SUBSYS_NETLABEL
+
+    # Delete rules
+    list=`/sbin/netlabelctl cipsov4 list 2>/dev/null`
+    ret="$?"
+    if [ x"$list" != "x" ] ; then
+	for line in "$list"
+	do
+		/sbin/netlabelctl cipsov4 del "doi:$line" 2>/dev/null
+    		ret="$?"
+	done
+    fi
+    return $ret
+}
+
+status() {
+    # Do not print status if lockfile is missing 
+    if [ ! -f "$VAR_SUBSYS_NETLABEL" ]; then
+	echo $"Netlabel is stopped."
+	return 3
+    fi
+
+    # List rules
+    /sbin/netlabelctl -p cipsov4 list 2>/dev/null
+    ret1="$?"
+    /sbin/netlabelctl -p mgmt protocols 2>/dev/null
+    ret2="$?"
+
+    if [ "$ret1" != "0" -o "$ret2" != "0" ] ; then
+	return 2
+    fi
+    return 0
+}
+
+restart() {
+    stop
+    start
+}
+
+case "$1" in
+    start)
+	stop
+	start
+	RETVAL="$?"
+	;;
+    stop)
+	stop
+	RETVAL="$?"
+	;;
+    restart)
+	restart
+	RETVAL="$?"
+	;;
+    condrestart)
+	[ -e "$VAR_SUBSYS_NETLABEL" ] && restart
+	;;
+    status)
+	status
+	RETVAL="$?"
+	;;
+    *)
+	echo $"Usage: $0 {start|stop|restart|condrestart|status}"
+	exit 3
+	;;
+esac
+
+exit $RETVAL

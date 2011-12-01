@@ -1,0 +1,10 @@
+--- netlabel_tools-0.19/netlabelctl/main.c	2009-01-05 16:24:16.000000000 -0500
++++ netlabel_tools-0.19.new/netlabelctl/main.c	2010-06-17 02:54:06.864494476 -0400
+@@ -352,6 +352,7 @@
+ 		fprintf(stderr,
+ 			MSG_ERR("unknown or missing module '%s'\n"),
+ 			module_name);
++		ret_val = 1;
+ 		goto exit;
+ 	}
+ 	ret_val = module_main(argc - optind - 1, argv + optind + 1);
